@@ -1,13 +1,13 @@
-// Chave para identificar os dados salvos pela aplicação no navegador.
-const STORAGE_KEY = "prompts-storage"
+// Chave para identificar os dados salvos pela nossa aplicação no navegador.
+const STORAGE_KEY = "prompts_storage"
 
-// Estado para carregar os prompts salvos e exibir.
+// Estado carregar os prompts salvos e exibir.
 const state = {
   prompts: [],
-  selectedId: null, // ID do prompt atualmente, por padrao começa no nulo
+  selectedId: null,
 }
 
-// Seleção dos elementos HTML por ID
+// Seletores dos elementos HTML por ID
 const elements = {
   promptTitle: document.getElementById("prompt-title"),
   promptContent: document.getElementById("prompt-content"),
@@ -29,7 +29,7 @@ function updateEditableWrapperState(element, wrapper) {
   wrapper.classList.toggle("is-empty", !hasText)
 }
 
-/// Funções para abrir e fechar a sidebar
+// Funções para abrir e fechar a sidebar
 function openSidebar() {
   elements.sidebar.classList.add("open")
   elements.sidebar.classList.remove("collapsed")
@@ -68,23 +68,25 @@ function save() {
   }
 
   if (state.selectedId) {
-    // Edita o prompt existente
+    // Editando um prompt existente
     const existingPrompt = state.prompts.find((p) => p.id === state.selectedId)
 
     if (existingPrompt) {
       existingPrompt.title = title || "Sem título"
       existingPrompt.content = content || "Sem conteúdo"
-    } 
+    }
   } else {
-    // Cria um novo prompt
+    // Criando um novo prompt
     const newPrompt = {
-      id: Date.now().toString(),
+      id: Date.now().toString(36),
       title,
       content,
     }
-    state.prompts.unshift(newPrompt) //unshift adiciona no inicio da lista, o push adiciona no final
+
+    state.prompts.unshift(newPrompt)
     state.selectedId = newPrompt.id
   }
+
   renderList(elements.search.value)
   persist()
   alert("Prompt salvo com sucesso!")
@@ -93,7 +95,7 @@ function save() {
 function persist() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.prompts))
-  } catch (error){
+  } catch (error) {
     console.log("Erro ao salvar no localStorage:", error)
   }
 }
@@ -112,25 +114,28 @@ function createPromptItem(prompt) {
   const tmp = document.createElement("div")
   tmp.innerHTML = prompt.content
   return `
-    <li class="prompt-item" data-id="${prompt.id}" data-action="select">
+      <li class="prompt-item" data-id="${prompt.id}" data-action="select">
         <div class="prompt-item-content">
           <span class="prompt-item-title">${prompt.title}</span>
-          <span class="prompt-item-description">${prompt.content}</span>
+          <span class="prompt-item-description">${tmp.textContent}</span>
         </div>
 
       <button class="btn-icon" title="Remover" data-action="remove">
-        <img class="icon icon-trash" src="assets/remove.svg" alt="Remover" />
+        <img src="assets/remove.svg" alt="Remover" class="icon icon-trash" />
       </button>
     </li>
   `
 }
 
 function renderList(filterText = "") {
-  const filteredPrompts = state.prompts.filter((prompt) =>
-    prompt.title.toLowerCase().includes(filterText.toLowerCase().trim())
-  ).map((p) => createPromptItem(p)).join("")
+  const filteredPrompts = state.prompts
+    .filter((prompt) =>
+      prompt.title.toLowerCase().includes(filterText.toLowerCase().trim())
+    )
+    .map((p) => createPromptItem(p))
+    .join("")
 
-  elements.list.innerHTML = filteredPrompts 
+  elements.list.innerHTML = filteredPrompts
 }
 
 function newPrompt() {
@@ -169,46 +174,46 @@ elements.search.addEventListener("input", function (event) {
 
 elements.list.addEventListener("click", function (event) {
   const removeBtn = event.target.closest("[data-action='remove']")
-  const item = event.target.closest("data-id")
+  const item = event.target.closest("[data-id]")
 
   if (!item) return
 
   const id = item.getAttribute("data-id")
+  state.selectedId = id
 
   if (removeBtn) {
-    // Remover prompt
+    // Remover prompt.
     state.prompts = state.prompts.filter((p) => p.id !== id)
     renderList(elements.search.value)
     persist()
     return
   }
 
-  if(event.target.closest("[data-action='select']")) {
-    // Selecionar prompt
+  if (event.target.closest("[data-action='select']")) {
     const prompt = state.prompts.find((p) => p.id === id)
+
     if (prompt) {
       elements.promptTitle.textContent = prompt.title
-      elements.promptContent.textContent = prompt.content
+      elements.promptContent.innerHTML = prompt.content
       updateAllEditableStates()
     }
   }
 })
 
-// Função de inicialização
+// Inicialização
 function init() {
   load()
   renderList("")
   attachAllEditableHandlers()
-  updateAllEditableStates()  //atualiza o estado inicial
+  updateAllEditableStates()
 
-  //estado inicial sidebar aberta (desktop) ou fechada (mobile)
-  elements.sidebar.classList.add("open");
-  elements.sidebar.classList.remove("collapsed");
-  
+  // Estado inicial: sidebar aberta (desktop) ou fechada (mobile)
+  elements.sidebar.classList.remove("open")
+  elements.sidebar.classList.remove("collapsed")
 
-  //eventos para abrir/fechar sidebar
+  // Eventos para abrir/fechar sidebar
   elements.btnOpen.addEventListener("click", openSidebar)
-  elements.btnCollapse.addEventListener("click", closeSidebar);
+  elements.btnCollapse.addEventListener("click", closeSidebar)
 }
 
 // Executa a inicialização ao carregar o script
